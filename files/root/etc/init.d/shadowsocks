@@ -74,7 +74,7 @@ get_plugin_config() {
 	local plugin_opts=$(uci_get_by_name $1 plugin_opts)
 	if [ -n "$plugin" ]; then
 		echo $plugin >>/var/run/ss-plugin
-		echo -e  "\n    \"plugin\": \"$plugin\","
+		echo -e  "\"plugin\": \"$plugin\","
 		if [ -n "$plugin_opts" ]; then
 			echo "    \"plugin_opts\": \"$plugin_opts\","
 		fi
@@ -96,17 +96,17 @@ get_crypto_config() {
 get_protocol_config() {
 	local protocol=$(uci_get_by_name $1 protocol)
 	local protocol_param=$(uci_get_by_name $1 protocol_param)
-	echo -e  "\n    \"protocol\": \"$plugin\","
-	if [ -n "$plugin_opts" ]; then
-		echo "    \"protocol_param\": \"$plugin_param\","
+	echo -e  "\"protocol\": \"$protocol\","
+	if [ -n "$protocol_param" ]; then
+		echo "    \"protocol_param\": \"$protocol_param\","
 	fi
 }
 
 get_obfs_config() {
 	local obfs=$(uci_get_by_name $1 obfs)
 	local obfs_param=$(uci_get_by_name $1 obfs_param)
-	echo -e  "\n    \"obfs\": \"$plugin\","
-	if [ -n "$plugin_opts" ]; then
+	echo -e  "\"obfs\": \"$obfs\","
+	if [ -n "$obfs_param" ]; then
 		echo "    \"obfs_param\": \"$obfs_param\","
 	fi
 }
@@ -130,8 +130,7 @@ gen_config_file() {
 		    $(get_crypto_config $1)
 		    "method": "$(uci_get_by_name $1 encrypt_method)",
 		    "local_address": "0.0.0.0",
-		    $(get_protocol_config $1),
-		    $(get_obfs_config $1),
+		    $(get_plugin_config $1)
 		    "timeout": $(uci_get_by_name $1 timeout 60),
 		    "reuse_port": true
 		}
@@ -146,8 +145,10 @@ gen_config_file_r() {
 		    "server": "$(uci_get_by_name $1 server)",
 		    "server_port": $(uci_get_by_name $1 server_port),
 		    $(get_crypto_config $1)
-		    "method": "$(uci_get_by_name $1 encrypt_method)",
-		    "local_address": "0.0.0.0",$(get_plugin_config $1)
+		    "method": "$(uci_get_by_name $1 encrypt_method_r)",
+		    "local_address": "0.0.0.0",
+		    $(get_protocol_config $1)
+		    $(get_obfs_config $1)
 		    "timeout": $(uci_get_by_name $1 timeout 60),
 		    "reuse_port": true
 		}
@@ -172,12 +173,11 @@ start_rules() {
 }
 
 rules() {
-	pidof ss-redir >/dev/null || return 0
+	pidof ss-redir >/dev/null || pidof ssr-redir >/dev/null || return 0
 	start_rules || /usr/bin/ss-rules -f
 }
 
 start_redir() {
-	echo "here"
 	validate_server $1 || return 0
 	if [ $(uci_get_by_name $1 "type") = "Shadowsocks" ]; then
 		ss-redir -c $(gen_config_file $1) $2 $(get_arg_tfo $1) $(get_arg_tnd $1) \
@@ -187,7 +187,6 @@ start_redir() {
 	fi
 
 	if [ $(uci_get_by_name $1 "type") = "ShadowsocksR" ]; then
-		echo "here"
 		ssr-redir -c $(gen_config_file_r $1) $2 $(get_arg_tfo $1) $(get_arg_tnd $1) \
 			-l $(uci_get_by_type transparent_proxy local_port 1234) \
 			--mtu $(uci_get_by_type transparent_proxy mtu 1492) \
