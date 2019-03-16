@@ -10,8 +10,12 @@ local function has_bin(name)
 	return luci.sys.call("command -v %s >/dev/null" %{name}) == 0
 end
 
+local function has_bin_with_r(name)
+	return has_bin("ss-" .. name) or has_bin("ssr-" .. name)
+end
+
 local function has_ss_bin()
-	return has_bin("ss-redir"), has_bin("ss-local"), has_bin("ss-tunnel")
+	return has_bin_with_r("redir"), has_bin_with_r("local"), has_bin_with_r("tunnel")
 end
 
 local function has_udp_relay()
@@ -22,15 +26,19 @@ local has_redir, has_local, has_tunnel = has_ss_bin()
 
 if not has_redir and not has_local and not has_tunnel then
 	return Map(shadowsocks, "%s - %s" %{translate("ShadowSocks"),
-		translate("General Settings")}, '<b style="color:red">shadowsocks-libev binary file not found.</b>')
+		translate("General Settings")}, '<b style="color:red">shadowsocks(r)-libev binary file not found.</b>')
 end
 
 local function is_running(name)
 	return luci.sys.call("pidof %s >/dev/null" %{name}) == 0
 end
 
+local function is_running_alt(name)
+	return is_running("ss-" .. name) or is_running("ssr-" .. name)
+end
+
 local function get_status(name)
-	return is_running(name) and translate("RUNNING") or translate("NOT RUNNING")
+	return is_running_alt(name) and translate("RUNNING") or translate("NOT RUNNING")
 end
 
 uci:foreach(shadowsocks, "servers", function(s)
@@ -48,19 +56,19 @@ s.anonymous = true
 
 if has_redir then
 	o = s:option(DummyValue, "_redir_status", translate("Transparent Proxy"))
-	o.value = "<span id=\"_redir_status\">%s</span>" %{get_status("ss-redir")}
+	o.value = "<span id=\"_redir_status\">%s</span>" %{get_status("redir")}
 	o.rawhtml = true
 end
 
 if has_local then
 	o = s:option(DummyValue, "_local_status", translate("SOCKS5 Proxy"))
-	o.value = "<span id=\"_local_status\">%s</span>" %{get_status("ss-local")}
+	o.value = "<span id=\"_local_status\">%s</span>" %{get_status("local")}
 	o.rawhtml = true
 end
 
 if has_tunnel then
 	o = s:option(DummyValue, "_tunnel_status", translate("Port Forward"))
-	o.value = "<span id=\"_tunnel_status\">%s</span>" %{get_status("ss-tunnel")}
+	o.value = "<span id=\"_tunnel_status\">%s</span>" %{get_status("tunnel")}
 	o.rawhtml = true
 end
 

@@ -36,15 +36,9 @@ function o.cfgvalue(...)
 	return Value.cfgvalue(...) or "?"
 end
 
-o = s:option(DummyValue, "encrypt_method", translate("Encrypt Method"))
+o = s:option(DummyValue, "type", translate("Type"))
 function o.cfgvalue(...)
-	local v = Value.cfgvalue(...)
-	return v and v:upper() or "?"
-end
-
-o = s:option(DummyValue, "plugin", translate("Plugin"))
-function o.cfgvalue(...)
-	return Value.cfgvalue(...) or translate("None")
+	return Value.cfgvalue(...) or "?"
 end
 
 return m
