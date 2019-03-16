@@ -36,11 +36,15 @@ local function is_running(name)
 	return luci.sys.call("pidof %s >/dev/null" %{name}) == 0
 end
 
+local function is_running_alt(name)
+	return is_running("ss-" .. name) or is_running("ssr-" .. name)
+end
+ 
 function action_status()
 	luci.http.prepare_content("application/json")
 	luci.http.write_json({
-		ss_redir = is_running("ss-redir"),
-		ss_local = is_running("ss-local"),
-		ss_tunnel = is_running("ss-tunnel")
+		ss_redir = is_running_alt("redir"),
+		ss_local = is_running_alt("local"),
+		ss_tunnel = is_running_alt("tunnel")
 	})
 end
