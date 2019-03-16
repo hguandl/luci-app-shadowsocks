@@ -5,8 +5,8 @@ local m, s, o
 local shadowsocks = "shadowsocks"
 local sid = arg[1]
 local shadowsocks_types = {
-	"ShadowSocks",
-	"ShadowSocksR"
+	"Shadowsocks",
+	"ShadowsocksR"
 }
 local encrypt_methods = {
 	"rc4-md5",
@@ -97,11 +97,11 @@ for _, v in ipairs(shadowsocks_types) do o:value(v, v) end
 o.rmempty = false
 
 o = s:option(Flag, "fast_open", translate("TCP Fast Open"))
-o:depends("type", "ShadowSocks")
+o:depends("type", "Shadowsocks")
 o.rmempty = false
 
 o = s:option(Flag, "no_delay", translate("TCP no-delay"))
-o:depends("type", "ShadowSocks")
+o:depends("type", "Shadowsocks")
 o.rmempty = false
 
 o = s:option(Value, "server", translate("Server Address"))
@@ -121,38 +121,38 @@ o = s:option(Value, "password", translate("Password"))
 o.password = true
 
 o = s:option(Value, "key", translate("Directly Key"))
-o:depends("type", "ShadowSocks")
+o:depends("type", "Shadowsocks")
 
 o = s:option(ListValue, "encrypt_method", translate("Encrypt Method"))
-o:depends("type", "ShadowSocks")
+o:depends("type", "Shadowsocks")
 for _, v in ipairs(encrypt_methods) do o:value(v, v:upper()) end
 
 o = s:option(ListValue, "encrypt_method_r", translate("Encrypt Method"))
-o:depends("type", "ShadowSocksR")
+o:depends("type", "ShadowsocksR")
 for _, v in ipairs(encrypt_methods_r) do o:value(v, v) end
 
 o = s:option(Value, "plugin", translate("Plugin Name"))
-o:depends("type", "ShadowSocks")
+o:depends("type", "Shadowsocks")
 o.placeholder = "eg: obfs-local"
 
 o = s:option(Value, "plugin_opts", translate("Plugin Arguments"))
-o:depends("type", "ShadowSocks")
+o:depends("type", "Shadowsocks")
 o.placeholder = "eg: obfs=http;obfs-host=www.bing.com"
 
 o = s:option(ListValue, "protocol", translate("Protocol"))
-o:depends("type", "ShadowSocksR")
+o:depends("type", "ShadowsocksR")
 for _, v in ipairs(protocols) do o:value(v, v) end
 o.rmempty = false
 
-o = s:option(Value, "protocol_opts", translate("Protocol Arguments"))
-o:depends("type", "ShadowSocksR")
+o = s:option(Value, "protocol_param", translate("Protocol Parameters"))
+o:depends("type", "ShadowsocksR")
 
-o = s:option(ListValue, "obfuscation_method", translate("Obfuscation Method"))
-o:depends("type", "ShadowSocksR")
+o = s:option(ListValue, "obfs", translate("Obfuscation"))
+o:depends("type", "ShadowsocksR")
 for _, v in ipairs(obfuscation_methods) do o:value(v, v) end
 o.rmempty = false
 
-o = s:option(Value, "obfuscation_opts", translate("Obfuscation Arguments"))
-o:depends("type", "ShadowSocksR")
+o = s:option(Value, "obfs_param", translate("Obfuscation Parameters"))
+o:depends("type", "ShadowsocksR")
 
 return m

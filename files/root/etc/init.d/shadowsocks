@@ -93,7 +93,53 @@ get_crypto_config() {
 	fi
 }
 
+get_protocol_config() {
+	local protocol=$(uci_get_by_name $1 protocol)
+	local protocol_param=$(uci_get_by_name $1 protocol_param)
+	echo -e  "\n    \"protocol\": \"$plugin\","
+	if [ -n "$plugin_opts" ]; then
+		echo "    \"protocol_param\": \"$plugin_param\","
+	fi
+}
+
+get_obfs_config() {
+	local obfs=$(uci_get_by_name $1 obfs)
+	local obfs_param=$(uci_get_by_name $1 obfs_param)
+	echo -e  "\n    \"obfs\": \"$plugin\","
+	if [ -n "$plugin_opts" ]; then
+		echo "    \"obfs_param\": \"$obfs_param\","
+	fi
+}
+
+get_method_config() {
+	if [ $(uci_get_by_name $1 type) = "Shadowsocks" ]; then
+		echo $(uci_get_by_name $1 encrypt_method)
+	fi
+
+	if [ $(uci_get_by_name $1 type) = "ShadowsocksR" ]; then
+		echo $(uci_get_by_name $1 encrypt_method_r)
+	fi
+}
+
 gen_config_file() {
+	local config_file=/var/etc/$NAME.$1.json
+	cat <<-EOF >$config_file
+		{
+		    "server": "$(uci_get_by_name $1 server)",
+		    "server_port": $(uci_get_by_name $1 server_port),
+		    $(get_crypto_config $1)
+		    "method": "$(uci_get_by_name $1 encrypt_method)",
+		    "local_address": "0.0.0.0",
+		    $(get_protocol_config $1),
+		    $(get_obfs_config $1),
+		    "timeout": $(uci_get_by_name $1 timeout 60),
+		    "reuse_port": true
+		}
+EOF
+	echo $config_file
+}
+
+gen_config_file_r() {
 	local config_file=/var/etc/$NAME.$1.json
 	cat <<-EOF >$config_file
 		{
@@ -131,11 +177,22 @@ rules() {
 }
 
 start_redir() {
+	echo "here"
 	validate_server $1 || return 0
-	ss-redir -c $(gen_config_file $1) $2 $(get_arg_tfo $1) $(get_arg_tnd $1) \
-		-l $(uci_get_by_type transparent_proxy local_port 1234) \
-		--mtu $(uci_get_by_type transparent_proxy mtu 1492) \
-		-f /var/run/ss-redir$3-$1.pid
+	if [ $(uci_get_by_name $1 "type") = "Shadowsocks" ]; then
+		ss-redir -c $(gen_config_file $1) $2 $(get_arg_tfo $1) $(get_arg_tnd $1) \
+			-l $(uci_get_by_type transparent_proxy local_port 1234) \
+			--mtu $(uci_get_by_type transparent_proxy mtu 1492) \
+			-f /var/run/ss-redir$3-$1.pid
+	fi
+
+	if [ $(uci_get_by_name $1 "type") = "ShadowsocksR" ]; then
+		echo "here"
+		ssr-redir -c $(gen_config_file_r $1) $2 $(get_arg_tfo $1) $(get_arg_tnd $1) \
+			-l $(uci_get_by_type transparent_proxy local_port 1234) \
+			--mtu $(uci_get_by_type transparent_proxy mtu 1492) \
+			-f /var/run/ss-redir$3-$1.pid
+	fi
 }
 
 ss_redir() {
@@ -189,7 +246,7 @@ ss_tunnel() {
 }
 
 start() {
-	pidof ss-redir ss-local ss-tunnel >/dev/null && return 0
+	pidof ss-redir ss-local ss-tunnel ssr-redir ssr-local ssr-tunnel >/dev/null && return 0
 	mkdir -p /var/run /var/etc
 	ss_redir && rules
 	ss_local
@@ -208,7 +265,7 @@ kill_all() {
 
 stop() {
 	/usr/bin/ss-rules -f
-	kill_all ss-redir ss-local ss-tunnel
+	kill_all ss-redir ss-local ss-tunnel ssr-redir ssr-local ssr-tunnel
 	if [ -f /var/run/ss-plugin ]; then
 		kill_all $(sort -u /var/run/ss-plugin)
 		rm -f /var/run/ss-plugin

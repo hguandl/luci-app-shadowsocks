@@ -18,6 +18,7 @@ config port_forward
 
 config servers
 	option alias 'sample'
+	option type 'Shadowsocks'
 	option fast_open '0'
 	option no_delay '0'
 	option server '127.0.0.1'
